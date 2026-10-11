@@ -1,0 +1,375 @@
+/*
+/  source file header;
+/ 	name		= psye4.c : psy edit function source file 4;
+/ 	version		= 1.00a;
+/ 	designer	= Kenji Psytoe;
+/ 	date		= 1990/05/20;
+/ 	contents	= bgn_blk	: (int) begin block;
+/ 			= end_blk	: (int) end block;
+/ 			= rel_blk	: (int) release block;
+/ 			= del_blk	: (int) delete block;
+/ 			= del_blkk	: (void) delete block kernel;
+/ 			= cpy_blk	: (int) copy block;
+/ 			= wri_blk	: (int) write block to file;
+/ 			= apd_kil	: (int) append kill buffer by next deletion;
+/ 			= ynk_kil	: (int) yank kill buffer;
+/ 			= res_kil	: (void) reset kill buffer;
+*/
+ 
+/* source file id */
+ 
+#define	PSYE4_C
+ 
+/* include file */
+ 
+#include	<stdio.h>
+#include	"psy.h"
+#include	"psyext.h"
+#include	"psyfnc.h"
+ 
+/* public declaration */
+ 
+/* public functions */
+ 
+int		bgn_blk();	/* begin block */
+int		end_blk();	/* end block */
+int		rel_blk();	/* release block */
+int		del_blk();	/* delete block */
+void		del_blkk();	/* delete block kernel */
+int		cpy_blk();	/* copy block */
+int		wri_blk();	/* write block to file */
+int		apd_kil();	/* append kill buffer by next deletion */
+int		ynk_kil();	/* yank kill buffer */
+void		res_kil();	/* reset kill buffer */
+ 
+/*
+/  specification;
+/ 	name		= bgn_blk;
+/ 	creation	= 1990/05/20;
+/ 	function	= begins block;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		bgn_blk()
+{
+	clr_rp();		/* clear repeat count */ 
+ 
+	bgnbk_ln = cur_ln;
+	bgnbk_cm = cur_cm;
+	show();
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name	 	= end_blk;
+/ 	creation	= 1990/05/20;
+/ 	function	= ends block;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		end_blk()
+{
+	clr_rp();		/* clear repeat count */
+ 
+	endbk_ln = cur_ln;
+	endbk_cm = cur_cm;
+	show();
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name		= rel_blk;
+/ 	creation	= 1990/05/20;
+/ 	function	= releases block;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		rel_blk()
+{
+	clr_rp();		/* clear repeat count */
+ 
+	bgnbk_cm = endbk_cm = 0;
+	show();
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name		= del_blk;
+/ 	creation	= 1990/05/20;
+/ 	function	= deletes block;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		del_blk()
+{
+	clr_rp();		/* clear repeat count */
+ 
+	/* cannot delete if block is no good */
+ 
+	if (undefbk())
+	{
+		psy_msg(E_BLOCK,NULL);
+		return (OK);
+	}
+ 
+	/* delete block */
+ 
+	del_blkk();
+	bgnbk_cm = endbk_cm = 0;
+ 
+	show2();
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name		= del_blkk;
+/ 	creation	= 1990/06/12;
+/ 	function	= deletes block;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= none (void);
+*/
+ 
+void		del_blkk()
+{
+	register	lncellpt_t	reg1_ln;	/* pointer register */
+	register	cmcellpt_t	reg1_cm;	/* pointer register */
+ 
+	res_kil();	/* reset kill buffer */
+ 
+	if (cur_cm == endbk_cm)
+		cur_cm = bgnbk_cm;
+ 
+	reg1_ln = bgnbk_ln -> link;
+	reg1_cm = getnext(bgnbk_cm);
+ 
+	bgnbk_ln -> link = endbk_ln -> link;
+	putnext(bgnbk_cm,getnext(endbk_cm));
+ 
+	release(reg1_ln,endbk_ln -> link,reg1_cm,getnext(endbk_cm),forward);
+ 
+	apnd_kill = FALSE;
+}
+ 
+/*
+/  specification;
+/ 	name		= cpy_blk;
+/ 	creation	= 1990/05/20;
+/ 	function	= copies block to kill buffer;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		cpy_blk()
+{
+	register	cmcellpt_t	reg1_cm,reg2_cm;	/* pointer registers */
+ 
+	clr_rp();		/* clear repeat count */
+ 
+	/* cannot copy if block is no good */
+ 
+	if (undefbk())
+	{
+		psy_msg(E_BLOCK,NULL);
+		return (OK);
+	}
+ 
+	res_kil();	/* reset kill buffer */
+ 
+	/* copy block */
+ 
+	reg1_cm = bgnbk_cm;
+	reg2_cm = getnext(endbk_cm);
+ 
+	while ((reg1_cm = getnext(reg1_cm)) != reg2_cm)
+	{
+		if (!bgnkl_cm)
+		{
+			if (!(bgnkl_cm = endkl_cm = new_cm()))
+			{
+				psy_msg(E_LARGE,NULL);
+				return (OK);
+			}
+		}
+		else if (!putnext(endkl_cm,new_cm()))
+		{
+			psy_msg(E_LARGE,NULL);
+			return (OK);
+		}
+		else
+			endkl_cm = getnext(endkl_cm);
+ 
+		putletr(endkl_cm,getletr(reg1_cm));
+	}
+ 
+	putnext(endkl_cm,0);
+ 
+	rel_blk();	/* release block */
+	apnd_kill = FALSE;
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name		= wri_blk;
+/ 	creation	= 1990/05/20;
+/ 	function	= writes block to a file;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		wri_blk()
+{
+	char_t		path[PATH_SIZE + 1];		/* path name */
+	FILE		*fp;				/* file pointer */
+ 
+	clr_rp();		/* clear repeat count */
+ 
+	/* cannot write if block is no good */
+ 
+	if (undefbk())
+	{
+		psy_msg(E_BLOCK,NULL);
+		return (OK);
+	}
+ 
+	/* read path name */
+ 
+	if (rea_min(P_WRITE,path,PATH_SIZE + 1) == ERROR)
+		return (OK);	/* break from mini-buffer */
+ 
+	/* check if overwrite */
+ 
+	if ((fp = fopen(path,"r")))
+	{
+		fclose(fp);
+		if (!rea_conf(P_OVWRT,NULL))
+			return (OK);	/* not confirmed */
+	}
+ 
+	save(path,bgnbk_cm,getnext(endbk_cm));
+ 
+	rel_blk();	/* release block */
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name		= apd_kil;
+/ 	creation	= 1990/06/12;
+/ 	function	= appends kill buffer by next deletion;
+/ 	parameter (in)	= none;
+/ 	parameter (out) = none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		apd_kil()
+{
+	clr_rp();		/* clear repeat count */
+ 
+	apnd_kill = TRUE;
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name		= ynk_kil;
+/ 	creation	= 1990/06/12;
+/ 	function	= yanks kill buffer;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= OK	: (int) done;
+*/
+ 
+int		ynk_kil()
+{
+	int		rp_cnt = rp;	/* repeat count */
+	register	cmcellpt_t	reg1_cm,reg3_cm;	/* pointer registers */
+	cmcellpt_t			reg2_cm;		/* pointer register */
+	lncellpt_t			reg1_ln,reg2_ln;	/* pointer registers */
+ 
+	clr_rp();		/* clear repeat count */
+ 
+	for (; rp_cnt-- > 0;)
+	{
+		reg1_cm = cur_cm;
+		reg2_cm = getnext(cur_cm);
+ 
+		reg1_ln = cur_ln;
+		reg2_ln = cur_ln -> link;
+ 
+		for (reg3_cm = bgnkl_cm; reg3_cm; reg3_cm = getnext(reg3_cm))
+		{
+			if (!putnext(reg1_cm,new_cm()))
+			{
+				putnext(reg1_cm,reg2_cm);
+				psy_msg(E_LARGE,NULL);
+				showrest();
+				return (OK);
+			}
+ 
+			if (putletr(reg1_cm = getnext(reg1_cm),getletr(reg3_cm)) == '\n')
+			{
+				if (!(reg1_ln -> link = new_ln()))
+				{
+					reg1_ln -> link = reg2_ln;
+					psy_msg(E_LARGE,NULL);
+					showrest();
+					return (OK);
+				}
+ 
+				(reg1_ln = reg1_ln -> link) -> addr = reg1_cm;
+			}
+		}
+ 
+		putnext(reg1_cm,reg2_cm);
+		reg1_ln -> link = reg2_ln;
+		mod_buf(TRUE);
+	}
+ 
+	showrest();
+ 
+	return (OK);
+}
+ 
+/*
+/  specification;
+/ 	name		= res_kil;
+/ 	creation	= 1990/06/12;
+/ 	function	= resets kill buffer;
+/ 	parameter (in)	= none;
+/ 	parameter (out)	= none;
+/ 	return		= none (void);
+*/
+ 
+void		res_kil()
+{
+	if (!apnd_kill)
+	{
+		release(NULL,NULL,bgnkl_cm,0,abandon);
+		bgnkl_cm = endkl_cm = 0;
+	}
+}
+ 
+/* end of psye4.c */

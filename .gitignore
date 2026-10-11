@@ -1,0 +1,32 @@
+# Build products
+/build/
+/psy
+/psy-ppc
+*.o
+*.obj
+
+# Local historical snapshots and personal configuration backups
+/backup-before-arm64/
+/releases/
+/config-migration/
+
+# Terminal logs and local agent state
+/logs/
+/.loglm_agent
+/.codex/
+/.agents/
+/AGENTS.md
+
+# Scratch files and editor backups
+/dummy.txt
+/stdout.psy
+/c:stdout.psy
+*.bak
+*~
+\#*\#
+.#*
+
+# macOS and Python generated files
+.DS_Store
+__pycache__/
+*.pyc
