@@ -1,0 +1,2 @@
+# Keep historical source bytes unchanged during check-in and checkout.
+/history/** -text

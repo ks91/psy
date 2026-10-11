@@ -2,6 +2,8 @@
 /build/
 /psy
 /psy-ppc
+/history/*/build/
+/history/*/psy
 *.o
 *.obj
 

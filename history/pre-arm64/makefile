@@ -1,0 +1,1 @@
+# cc -c -DHI_UX -DANSI_C -DOK_PROBLEM -DXWINDOW -DBSD psy*.c

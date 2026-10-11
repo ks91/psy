@@ -178,13 +178,32 @@ Memory checks use AddressSanitizer and UndefinedBehaviorSanitizer. Leak detectio
 alone is disabled because some persistent buffers are reclaimed by the operating
 system at process exit.
 
-## Locally archived versions
+## Historical sources
 
-The following materials were saved locally during the port and are excluded from
-Git tracking:
+Two source snapshots document the transition to the current version:
 
-- `releases/psy-legacy-arm64/` contains the legacy Apple Silicon executable,
-  sources, and makefile. It retains Shift-JIS and the original 64k limit.
-  `SHA256SUMS` can be used to verify the archived contents.
-- `backup-before-arm64/` contains the Intel executable and sources from before
-  the port.
+| Snapshot | Contents |
+| --- | --- |
+| [Before the arm64 port](history/pre-arm64/) | Sources and makefile preserved immediately before the 2026 port, from the working tree used with the Intel executable. |
+| [Legacy behavior on arm64](history/legacy-arm64/) | The minimal Apple Silicon port, before the buffer, Unicode, and terminal resizing changes. It retains Shift-JIS and the roughly 64k character limit. |
+
+These are snapshots preserved on October 11, 2026, not an untouched 1990 release
+or a reconstruction of the project's full revision history. The older snapshot
+already includes changes made during the BSD and Mac OS X years. The original
+MS-DOS compiler and linker option files (`psy.cc` and `psy.ld`) and DOS support
+source (`psydos.dosc`) also remain at the repository root.
+
+The archived sources and makefiles are byte-for-byte copies, preserving their
+original encodings and line endings. `.gitattributes` disables line-ending
+conversion under `history/`. Each snapshot has a `SHA256SUMS` manifest; verify it
+by running `shasum -a 256 -c SHA256SUMS` inside that directory.
+
+The pre-arm64 snapshot is provided as historical material and is not expected to
+build unchanged with current tools. The legacy arm64 snapshot can be built with
+`make` in its directory. It requires a legacy Shift-JIS `custom.psy`, selected
+through `PSYHEAD` with a trailing `/`; the current UTF-8 configuration is not
+intended for that version. Use the repository root for current development.
+
+The original local backups, including the Intel and legacy arm64 executables,
+remain in `backup-before-arm64/` and `releases/psy-legacy-arm64/`. Those directories
+and personal configuration backups are excluded from Git tracking.
